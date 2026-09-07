@@ -76,13 +76,13 @@ else:
     # 6. 데이터프레임 변환 및 수치형 데이터 형변환 (정렬 및 그래프용)
     df = pd.DataFrame(box_office_data)
     
-    # 텍스트로 들어오는 숫자를 정수(int) 타입으로 캐스팅
+    # 텍스트로 들어오는 숫자를 정수(int) 타입으로 변환
     numeric_columns = ["rank", "audiCnt", "audiAcc", "scrnCnt"]
     for col in numeric_columns:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
         
-    # 순위 기준 정렬
-    df = df.sort_values(by="rank")
+    # 순위(rank) 기준 오름차순 정렬 (1위 -> 10위)
+    df = df.sort_values(by="rank", ascending=True)
 
     # 7. 1위 영화 핵심 지표 카드 3장
     st.subheader("🏆 어제의 박스오피스 1위")
@@ -98,14 +98,22 @@ else:
 
     st.divider()
 
-    # 8. 관객 수 상위 5편 막대그래프
-    st.subheader("📊 관객 수 상위 5개 영화")
+    # 8. 관객 수 상위 5편 막대그래프 (순위 순 정렬)
+    st.subheader("📊 관객 수 상위 5개 영화 (1위 ~ 5위 순)")
     top_5_df = df.head(5).copy()
     
-    # 그래프 축 설정을 위한 데이터 재구성
-    chart_data = top_5_df.set_index("movieNm")[["audiCnt"]]
-    chart_data.columns = ["어제 관객 수"]
-    st.bar_chart(chart_data)
+    # X축에 '1위: 영화명' 형태로 명확히 표시
+    top_5_df["순위_영화명"] = top_5_df["rank"].astype(str) + "위: " + top_5_df["movieNm"]
+
+    # sort=False 옵션을 통해 가나다 순 자동 정렬을 끄고, 순위 데이터 순서를 유지합니다.
+    st.bar_chart(
+        top_5_df,
+        x="순위_영화명",
+        y="audiCnt",
+        x_label="순위 및 영화명",
+        y_label="어제 관객 수 (명)",
+        sort=False
+    )
 
     st.divider()
 
@@ -116,7 +124,7 @@ else:
     display_df = df[["rank", "movieNm", "openDt", "audiCnt", "audiAcc", "scrnCnt"]].copy()
     display_df.columns = ["순위", "영화명", "개봉일", "관객수", "누적관객", "스크린수"]
 
-    # 보기 좋은 숫자 단위 포맷으로 테이블 출력
+    # 순위 순으로 정렬되어 보여지는 정갈한 테이블
     st.dataframe(
         display_df,
         use_container_width=True,
